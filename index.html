@@ -80,7 +80,7 @@
           }
         })
         .catch(() => {
-          document.getElementById("resultado").innerText = "Error en la conexión al servidor.";
+          document.getElementById("resultado").innerText = "⚠️ Error en la conexión al servidor.";
         });
     }
 
@@ -99,8 +99,9 @@
         // Ignorar errores
       }
     ).catch(err => {
-      document.getElementById("resultado").innerText = "No se pudo acceder a la cámara.";
+      document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
     });
   </script>
 </body>
 </html>
+
