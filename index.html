@@ -1,56 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Lector con Cámara</title>
-  <meta charset="utf-8">
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <meta charset="UTF-8">
+  <title>Lector de Códigos de Barra - Estudiantes</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    #reader { width: 300px; margin-bottom: 20px; }
-    #resultado { font-size: 1.2em; }
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #scanner-container {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      border: 2px solid #000;
+      height: 300px;
+    }
+    #resultado {
+      margin-top: 20px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <h2>Escanear código con cámara</h2>
-  <div id="reader"></div>
-  <div id="resultado">Escanee un código para ver información</div>
 
+  <h1>Escanea tu Código de Barra</h1>
+  <div id="scanner-container"></div>
+  <div id="resultado">Esperando lectura...</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
-    const URL_BASE = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
+    const API_URL = "https://script.google.com/macros/s/PASTE_YOUR_SCRIPT_ID/exec"; // ← REEMPLAZA ESTO
 
-    function consultarID(id) {
-      fetch(URL_BASE + "?id=" + encodeURIComponent(id))
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            document.getElementById("resultado").innerHTML = "❌ ID no encontrado.";
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#scanner-container'),
+        constraints: {
+          facingMode: "environment" // cámara trasera
+        },
+      },
+      decoder: {
+        readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"] // puedes agregar más si lo necesitas
+      },
+    }, function (err) {
+      if (err) {
+        console.error(err);
+        document.getElementById("resultado").textContent = "Error al iniciar la cámara";
+        return;
+      }
+      Quagga.start();
+    });
+
+    Quagga.onDetected(function (data) {
+      const codigo = data.codeResult.code;
+      document.getElementById("resultado").textContent = "Código leído: " + codigo;
+
+      // Consultar API de Google Sheets
+      fetch(`${API_URL}?id=${codigo}`)
+        .then(response => response.json())
+        .then(info => {
+          if (info.error) {
+            document.getElementById("resultado").textContent = "ID no encontrado";
           } else {
             document.getElementById("resultado").innerHTML = `
-              <strong>Nombre:</strong> ${data.nombre}<br>
-              <strong>Curso:</strong> ${data.curso}
+              <p><strong>Nombre:</strong> ${info.nombre}</p>
+              <p><strong>Curso:</strong> ${info.curso}</p>
+              <p><strong>Info médica:</strong> ${info.info}</p>
             `;
           }
         })
         .catch(() => {
-          document.getElementById("resultado").innerText = "Error en la conexión al servidor.";
+          document.getElementById("resultado").textContent = "Error al consultar los datos.";
         });
-    }
 
-    const html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: 250 };
-
-    html5QrCode.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText, decodedResult) => {
-        html5QrCode.stop(); // Detiene escaneo una vez detectado
-        consultarID(decodedText.trim());
-      },
-      (errorMessage) => {
-        // Ignora errores de escaneo
-      }
-    ).catch(err => {
-      document.getElementById("resultado").innerText = "No se pudo acceder a la cámara.";
+      // Detener lectura hasta nueva activación (evita múltiples lecturas del mismo código)
+      Quagga.stop();
+      setTimeout(() => {
+        document.getElementById("resultado").textContent = "Escanea tu código";
+        Quagga.start();
+      }, 3000);
     });
   </script>
 </body>
