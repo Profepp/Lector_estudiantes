@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lector Colegio Fraternidad</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lector Colegio Fraternidad (CSV)</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -58,48 +59,74 @@
   </header>
   <main>
     <div id="reader"></div>
-    <div id="resultado">Esperando escaneo...</div>
+    <div id="resultado">Cargando datos...</div>
   </main>
 
   <script>
-    const URL_BASE = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
+    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLi1jizQ6LKkpAXQFEQJWLEnyLHS8mnVFZ5la2kTyfkLwK0x5nXa95MeBrzNZb7B8ZIik7ueNa-4mG/pub?gid=0&single=true&output=csv";
+    let registros = [];
 
-    function consultarID(id) {
-      fetch(URL_BASE + "?id=" + encodeURIComponent(id))
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
-          } else {
-            document.getElementById("resultado").innerHTML = `
-              <h3>Información del Estudiante</h3>
-              <p><strong>Nombre:</strong> ${data.nombre}</p>
-              <p><strong>Curso:</strong> ${data.curso}</p>
-              <p><strong>Observación:</strong> ${data.observacion}</p>
-            `;
-          }
-        })
-        .catch(() => {
-          document.getElementById("resultado").innerText = "⚠️ Error en la conexión al servidor.";
-        });
+    function normalizar(texto) {
+      return texto.replace(/[.-]/g, "").trim();
     }
 
-    const html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    function cargarDatos(callback) {
+      Papa.parse(URL_CSV, {
+        download: true,
+        header: true,
+        complete: function(results) {
+          registros = results.data;
+          document.getElementById("resultado").innerText = "Esperando escaneo...";
+          if (callback) callback();
+        },
+        error: function() {
+          document.getElementById("resultado").innerText = "❌ Error al cargar los datos.";
+        }
+      });
+    }
 
-    html5QrCode.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText, decodedResult) => {
-        html5QrCode.stop().then(() => {
-          consultarID(decodedText.trim());
-        });
-      },
-      (errorMessage) => {
-        // Ignorar errores
+    function buscarID(id) {
+      const normalizado = normalizar(id);
+      for (let persona of registros) {
+        if (normalizar(persona.ID) === normalizado) {
+          return persona;
+        }
       }
-    ).catch(err => {
-      document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
+      return null;
+    }
+
+    function mostrarDatos(id) {
+      const persona = buscarID(id);
+      if (persona) {
+        document.getElementById("resultado").innerHTML = `
+          <h3>Información del Estudiante</h3>
+          <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
+          <p><strong>Curso:</strong> ${persona["Curso"]}</p>
+          <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
+        `;
+      } else {
+        document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
+      }
+    }
+
+    cargarDatos(function() {
+      const html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+          html5QrCode.stop().then(() => {
+            mostrarDatos(decodedText.trim());
+          });
+        },
+        (errorMessage) => {
+          // Ignorar errores
+        }
+      ).catch(err => {
+        document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
+      });
     });
   </script>
 </body>
