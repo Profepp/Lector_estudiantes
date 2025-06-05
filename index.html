@@ -50,6 +50,22 @@
       margin-right: auto;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
+
+    #reintentar {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #005bab;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+
+    #reintentar:hover {
+      background-color: #003f7d;
+    }
   </style>
 </head>
 <body>
@@ -60,11 +76,13 @@
   <main>
     <div id="reader"></div>
     <div id="resultado">Cargando datos...</div>
+    <button id="reintentar" onclick="reiniciarEscaneo()">Escanear otro código</button>
   </main>
 
   <script>
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLi1jizQ6LKkpAXQFEQJWLEnyLHS8mnVFZ5la2kTyfkLwK0x5nXa95MeBrzNZb7B8ZIik7ueNa-4mG/pub?gid=0&single=true&output=csv";
     let registros = [];
+    let lector;
 
     function normalizar(texto) {
       return texto.replace(/[.-]/g, "").trim();
@@ -107,17 +125,18 @@
       } else {
         document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
       }
+      document.getElementById("reintentar").style.display = "inline-block";
     }
 
-    cargarDatos(function() {
-      const html5QrCode = new Html5Qrcode("reader");
+    function iniciarEscaneo() {
+      lector = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-      html5QrCode.start(
+      lector.start(
         { facingMode: "environment" },
         config,
         (decodedText, decodedResult) => {
-          html5QrCode.stop().then(() => {
+          lector.stop().then(() => {
             mostrarDatos(decodedText.trim());
           });
         },
@@ -127,8 +146,15 @@
       ).catch(err => {
         document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
       });
-    });
+    }
+
+    function reiniciarEscaneo() {
+      document.getElementById("resultado").innerText = "Escaneando...";
+      document.getElementById("reintentar").style.display = "none";
+      iniciarEscaneo();
+    }
+
+    cargarDatos(iniciarEscaneo);
   </script>
 </body>
 </html>
-
