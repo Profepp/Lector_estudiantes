@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lector con Cámara</title>
+  <meta charset="utf-8">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #reader { width: 300px; margin-bottom: 20px; }
+    #resultado { font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <h2>Escanear código con cámara</h2>
+  <div id="reader"></div>
+  <div id="resultado">Escanee un código para ver información</div>
+
+  <script>
+    const URL_BASE = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
+
+    function consultarID(id) {
+      fetch(URL_BASE + "?id=" + encodeURIComponent(id))
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById("resultado").innerHTML = "❌ ID no encontrado.";
+          } else {
+            document.getElementById("resultado").innerHTML = `
+              <strong>Nombre:</strong> ${data.nombre}<br>
+              <strong>Curso:</strong> ${data.curso}
+            `;
+          }
+        })
+        .catch(() => {
+          document.getElementById("resultado").innerText = "Error en la conexión al servidor.";
+        });
+    }
+
+    const html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: 250 };
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      (decodedText, decodedResult) => {
+        html5QrCode.stop(); // Detiene escaneo una vez detectado
+        consultarID(decodedText.trim());
+      },
+      (errorMessage) => {
+        // Ignora errores de escaneo
+      }
+    ).catch(err => {
+      document.getElementById("resultado").innerText = "No se pudo acceder a la cámara.";
+    });
+  </script>
+</body>
+</html>
