@@ -2,87 +2,100 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Lector de Códigos de Barra - Estudiantes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lector Colegio Fraternidad</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f7f9;
+      color: #1d1d1d;
       text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #005bab;
+      color: white;
+      padding: 15px 10px;
+      font-size: 1.2em;
+    }
+
+    main {
       padding: 20px;
     }
-    #scanner-container {
+
+    #reader {
       width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      border: 2px solid #000;
-      height: 300px;
+      max-width: 350px;
+      margin: 20px auto;
+      border-radius: 10px;
+      overflow: hidden;
     }
+
     #resultado {
       margin-top: 20px;
-      font-size: 1.2em;
-      font-weight: bold;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      max-width: 350px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
+  <header>
+    Escanea tu Código de Barra
+  </header>
+  <main>
+    <div id="reader"></div>
+    <div id="resultado">Esperando escaneo...</div>
+  </main>
 
-  <h1>Escanea tu Código de Barra</h1>
-  <div id="scanner-container"></div>
-  <div id="resultado">Esperando lectura...</div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec"; // ← REEMPLAZA ESTO
+    const URL_BASE = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
 
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('#scanner-container'),
-        constraints: {
-          facingMode: "environment" // cámara trasera
-        },
-      },
-      decoder: {
-        readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"] // puedes agregar más si lo necesitas
-      },
-    }, function (err) {
-      if (err) {
-        console.error(err);
-        document.getElementById("resultado").textContent = "Error al iniciar la cámara";
-        return;
-      }
-      Quagga.start();
-    });
-
-    Quagga.onDetected(function (data) {
-      const codigo = data.codeResult.code;
-      document.getElementById("resultado").textContent = "Código leído: " + codigo;
-
-      // Consultar API de Google Sheets
-      fetch(`${API_URL}?id=${codigo}`)
-        .then(response => response.json())
-        .then(info => {
-          if (info.error) {
-            document.getElementById("resultado").textContent = "ID no encontrado";
+    function consultarID(id) {
+      fetch(URL_BASE + "?id=" + encodeURIComponent(id))
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
           } else {
             document.getElementById("resultado").innerHTML = `
-              <p><strong>Nombre:</strong> ${info.nombre}</p>
-              <p><strong>Curso:</strong> ${info.curso}</p>
-              <p><strong>Info médica:</strong> ${info.info}</p>
+              <h3>Información del Estudiante</h3>
+              <p><strong>Nombre:</strong> ${data.nombre}</p>
+              <p><strong>Curso:</strong> ${data.curso}</p>
             `;
           }
         })
         .catch(() => {
-          document.getElementById("resultado").textContent = "Error al consultar los datos.";
+          document.getElementById("resultado").innerText = "Error en la conexión al servidor.";
         });
+    }
 
-      // Detener lectura hasta nueva activación (evita múltiples lecturas del mismo código)
-      Quagga.stop();
-      setTimeout(() => {
-        document.getElementById("resultado").textContent = "Escanea tu código";
-        Quagga.start();
-      }, 3000);
+    const html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      (decodedText, decodedResult) => {
+        html5QrCode.stop().then(() => {
+          consultarID(decodedText.trim());
+        });
+      },
+      (errorMessage) => {
+        // Ignorar errores
+      }
+    ).catch(err => {
+      document.getElementById("resultado").innerText = "No se pudo acceder a la cámara.";
     });
   </script>
 </body>
 </html>
+
