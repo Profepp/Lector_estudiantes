@@ -18,8 +18,12 @@
     header {
       background-color: #005bab;
       color: white;
-      padding: 15px 10px;
-      font-size: 1.2em;
+      padding: 10px;
+    }
+
+    header img {
+      height: 60px;
+      margin-bottom: 10px;
     }
 
     main {
@@ -49,7 +53,8 @@
 </head>
 <body>
   <header>
-    Escanea tu Código de Barra
+    <img src="https://www.colegiofraternidad.cl/wp-content/uploads/2024/06/ccf-2.png" alt="Logo Colegio Fraternidad">
+    <h2>Escanea tu Código de Barra</h2>
   </header>
   <main>
     <div id="reader"></div>
@@ -57,7 +62,7 @@
   </main>
 
   <script>
-    const URL_BASE = "https://script.google.com/macros/library/d/153FP9IuReIHHzp3lQDURKpbIQ445RRdePzkpUO3dYneJYIgWbFNmd_b3/1";
+    const URL_BASE = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
 
     function consultarID(id) {
       fetch(URL_BASE + "?id=" + encodeURIComponent(id))
@@ -70,6 +75,7 @@
               <h3>Información del Estudiante</h3>
               <p><strong>Nombre:</strong> ${data.nombre}</p>
               <p><strong>Curso:</strong> ${data.curso}</p>
+              <p><strong>Observación:</strong> ${data.observacion}</p>
             `;
           }
         })
@@ -98,4 +104,3 @@
   </script>
 </body>
 </html>
-
