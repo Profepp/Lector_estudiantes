@@ -101,7 +101,7 @@
 
     function registrarSinUniforme() {
       if (!idActual) return;
-      fetch(`${SCRIPT_URL}?accion=sin_uniforme&id=${idActual}`)
+      fetch(`${https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec}?accion=sin_uniforme&id=${idActual}`)
         .then(res => res.text())
         .then(msg => alert("✅ Registro realizado: " + msg))
         .catch(() => alert("❌ Error al registrar."));
