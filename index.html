@@ -1,158 +1,83 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Lector Colegio Fraternidad</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Lector de Código de Barras</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; text-align: center; margin: 0; padding: 0; }
-    header { background-color: #005bab; color: white; padding: 10px; }
-    header img { height: 60px; margin-bottom: 10px; }
-    main { padding: 20px; }
-    #reader-container { position: relative; width: 100%; max-width: 500px; margin: 20px auto; }
-    #reader { width: 100%; border-radius: 10px; overflow: hidden; }
-    #alinear { margin-top: -20px; font-size: 0.9em; color: #555; }
-    #resultado, #id-leido {
-      margin-top: 20px; background-color: white; border: 1px solid #ccc; border-radius: 8px;
-      padding: 15px; max-width: 500px; margin-left: auto; margin-right: auto;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    #reintentar {
-      display: none; margin-top: 15px; padding: 10px 20px; background-color: #005bab;
-      color: white; border: none; border-radius: 6px; font-size: 1em; cursor: pointer;
-    }
-    #reintentar:hover { background-color: #003f7d; }
-    footer { font-size: 0.75em; color: #777; margin-top: 40px; padding-bottom: 15px; }
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    #scanner-container { width: 100%; max-width: 500px; height: 300px; margin: auto; border: 2px solid #000; }
+    #resultado { margin-top: 20px; font-size: 1.2em; }
+    button { padding: 10px 20px; margin-top: 15px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <header>
-    <img src="https://www.colegiofraternidad.cl/wp-content/uploads/2024/06/ccf-2.png" alt="Logo Colegio Fraternidad">
-    <h2>Escanea tu Código de Barra</h2>
-  </header>
-  <main>
-    <div id="reader-container">
-      <div id="reader"></div>
-      <div id="alinear">Alinea tu código de barra o número visible dentro del recuadro</div>
-    </div>
-    <div id="id-leido">ID leído: <em>(en espera)</em></div>
-    <div id="resultado">Cargando datos...</div>
-    <button id="reintentar" onclick="reiniciarEscaneo()">Escanear otro código</button>
-  </main>
-  <footer>
-    Desarrollado por j.quezada@coemco.cl
-  </footer>
+
+  <h2>Escanea tu Código</h2>
+  <div id="scanner-container"></div>
+  <div id="resultado">Esperando lectura...</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
-    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLi1jizQ6LKkpAXQFEQJWLEnyLHS8mnVFZ5la2kTyfkLwK0x5nXa95MeBrzNZb7B8ZIik7ueNa-4mG/pub?gid=0&single=true&output=csv";
-    let registros = [];
-    let lector;
-    let ocrIntentado = false;
+    const API_URL = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
 
-    function normalizar(texto) {
-      return texto.replace(/[.-]/g, "").trim();
-    }
-
-    function cargarDatos(callback) {
-      Papa.parse(URL_CSV, {
-        download: true,
-        header: true,
-        complete: function(results) {
-          registros = results.data;
-          document.getElementById("resultado").innerText = "Esperando escaneo...";
-          if (callback) callback();
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#scanner-container'),
+        constraints: {
+          facingMode: "environment"
         },
-        error: function() {
-          document.getElementById("resultado").innerText = "❌ Error al cargar los datos.";
-        }
-      });
-    }
-
-    function buscarID(id) {
-      const normalizado = normalizar(id);
-      for (let persona of registros) {
-        if (normalizar(persona.ID) === normalizado) {
-          return persona;
-        }
+      },
+      decoder: {
+        readers: ["code_128_reader", "ean_reader", "upc_reader"]
+      },
+    }, function (err) {
+      if (err) {
+        console.error(err);
+        document.getElementById("resultado").textContent = "Error al acceder a la cámara";
+        return;
       }
-      return null;
-    }
+      Quagga.start();
+    });
 
-    function mostrarDatos(id) {
-      const persona = buscarID(id);
-      if (persona) {
-        document.getElementById("resultado").innerHTML = `
-          <h3>Información del Estudiante</h3>
-          <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
-          <p><strong>Curso:</strong> ${persona["Curso"]}</p>
-          <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
-        `;
-      } else {
-        document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
-      }
-      document.getElementById("reintentar").style.display = "inline-block";
-    }
+    Quagga.onDetected(function (data) {
+      const codigo = data.codeResult.code;
+      document.getElementById("resultado").textContent = "Código detectado: " + codigo;
 
-    function usarOCR() {
-      const video = document.querySelector("video");
-      if (!video) return;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      Tesseract.recognize(canvas.toDataURL(), 'eng', {
-        tessedit_char_whitelist: '0123456789'
-      }).then(({ data: { text } }) => {
-        const posibleID = text.match(/\d{7,9}/);
-        if (posibleID) {
-          const idLeido = posibleID[0];
-          document.getElementById("id-leido").innerHTML = "ID leído (OCR): <strong>" + idLeido + "</strong>";
-          mostrarDatos(idLeido);
-        } else {
-          document.getElementById("id-leido").innerHTML = "ID leído: <em>No se reconoció texto útil</em>";
-          document.getElementById("resultado").innerText = "⚠️ Intenta alinear mejor la tarjeta.";
-        }
-      });
-    }
-
-    function iniciarEscaneo() {
-      lector = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 400, height: 100 } };
-
-      lector.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText, decodedResult) => {
-          lector.stop().then(() => {
-            document.getElementById("id-leido").innerHTML = "ID leído: <strong>" + decodedText + "</strong>";
-            mostrarDatos(decodedText.trim());
-          });
-        },
-        (errorMessage) => {
-          if (!ocrIntentado && errorMessage.includes("No MultiFormat Readers")) {
-            ocrIntentado = true;
-            usarOCR();
+      fetch(`${API_URL}?id=${codigo}`)
+        .then(res => res.json())
+        .then(info => {
+          if (info.error) {
+            document.getElementById("resultado").innerText = "ID no encontrado";
+          } else {
+            document.getElementById("resultado").innerHTML = `
+              <p><strong>Nombre:</strong> ${info.nombre}</p>
+              <p><strong>Curso:</strong> ${info.curso}</p>
+              <p><strong>Info médica:</strong> ${info.info}</p>
+              <button onclick="registrarSinUniforme('${codigo}')">❌ Marcar sin uniforme</button>
+            `;
           }
-        }
-      ).catch(err => {
-        document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
-      });
-    }
+        });
 
-    function reiniciarEscaneo() {
-      document.getElementById("resultado").innerText = "Escaneando...";
-      document.getElementById("id-leido").innerHTML = "ID leído: <em>(en espera)</em>";
-      document.getElementById("reintentar").style.display = "none";
-      ocrIntentado = false;
-      iniciarEscaneo();
-    }
+      Quagga.stop();
+      setTimeout(() => {
+        document.getElementById("resultado").textContent = "Escanea tu código";
+        Quagga.start();
+      }, 3000);
+    });
 
-    cargarDatos(iniciarEscaneo);
+    function registrarSinUniforme(id) {
+      fetch(`${API_URL}?accion=sin_uniforme&id=${id}`)
+        .then(res => res.text())
+        .then(respuesta => {
+          alert("Registrado correctamente: " + respuesta);
+        })
+        .catch(() => {
+          alert("Error al registrar.");
+        });
+    }
   </script>
 </body>
 </html>
+
