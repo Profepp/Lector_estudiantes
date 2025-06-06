@@ -47,9 +47,11 @@
   </footer>
   <script>
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLi1jizQ6LKkpAXQFEQJWLEnyLHS8mnVFZ5la2kTyfkLwK0x5nXa95MeBrzNZb7B8ZIik7ueNa-4mG/pub?gid=0&single=true&output=csv";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec";
     let registros = [];
     let lector;
     let ocrIntentado = false;
+    let idActual = null;
 
     function normalizar(texto) {
       return texto.replace(/[.-]/g, "").trim();
@@ -81,6 +83,7 @@
     }
 
     function mostrarDatos(id) {
+      idActual = id;
       const persona = buscarID(id);
       if (persona) {
         document.getElementById("resultado").innerHTML = `
@@ -88,11 +91,20 @@
           <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
           <p><strong>Curso:</strong> ${persona["Curso"]}</p>
           <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
+          <button onclick="registrarSinUniforme()">❌ Marcar sin uniforme</button>
         `;
       } else {
         document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
       }
       document.getElementById("reintentar").style.display = "inline-block";
+    }
+
+    function registrarSinUniforme() {
+      if (!idActual) return;
+      fetch(`${SCRIPT_URL}?accion=sin_uniforme&id=${idActual}`)
+        .then(res => res.text())
+        .then(msg => alert("✅ Registro realizado: " + msg))
+        .catch(() => alert("❌ Error al registrar."));
     }
 
     function usarOCR() {
@@ -156,4 +168,3 @@
   </script>
 </body>
 </html>
-
