@@ -102,21 +102,25 @@
       document.getElementById("reintentar").style.display = "inline-block";
     }
 
-    function registrarSinUniforme() {
+   function registrarSinUniforme() {
   fetch("https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZlQxXVeTP8zhGcZRI8eUwGP2dbIMbMuuWamnrD/exec", {
-  method: "POST",
-  mode: "no-cors",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
-});
-      });
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
+  });
 
-      document.getElementById("registrarUniforme").innerText = "✅ Registrado";
-      setTimeout(() => {
-        document.getElementById("registrarUniforme").innerText = "❌ Sin uniforme";
-        document.getElementById("registrarUniforme").style.display = "none";
-      }, 2000);
-    }
+  // Mostrar mensaje visual en la página
+  const resultadoDiv = document.getElementById("resultado");
+  resultadoDiv.innerHTML += `<p style="color: green; font-weight: bold; margin-top: 10px;">✅ Registrado correctamente</p>`;
+
+  document.getElementById("registrarUniforme").innerText = "✅ Registrado";
+
+  setTimeout(() => {
+    document.getElementById("registrarUniforme").innerText = "❌ Sin uniforme";
+    document.getElementById("registrarUniforme").style.display = "none";
+  }, 2000);
+}
 
     function usarOCR() {
       const video = document.querySelector("video");
