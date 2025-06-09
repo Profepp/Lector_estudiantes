@@ -107,7 +107,12 @@
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
+        body: JSON.stringify({
+    id: idActual,
+    nombre: nombreActual,
+    curso: cursoActual,
+    accion: "sin_uniforme"
+  })
       });
 
       document.getElementById("registrarUniforme").innerText = "✅ Registrado";
