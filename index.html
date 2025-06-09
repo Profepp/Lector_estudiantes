@@ -20,11 +20,14 @@
       padding: 15px; max-width: 500px; margin-left: auto; margin-right: auto;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    #reintentar {
-      display: none; margin-top: 15px; padding: 10px 20px; background-color: #005bab;
-      color: white; border: none; border-radius: 6px; font-size: 1em; cursor: pointer;
+    #reintentar, #registrarUniforme {
+      display: none; margin-top: 15px; padding: 10px 20px; border: none; border-radius: 6px;
+      font-size: 1em; cursor: pointer;
     }
+    #reintentar { background-color: #005bab; color: white; }
     #reintentar:hover { background-color: #003f7d; }
+    #registrarUniforme { background-color: #cc0000; color: white; }
+    #registrarUniforme:hover { background-color: #990000; }
     footer { font-size: 0.75em; color: #777; margin-top: 40px; padding-bottom: 15px; }
   </style>
 </head>
@@ -41,6 +44,7 @@
     <div id="id-leido">ID leído: <em>(en espera)</em></div>
     <div id="resultado">Cargando datos...</div>
     <button id="reintentar" onclick="reiniciarEscaneo()">Escanear otro código</button>
+    <button id="registrarUniforme" onclick="registrarSinUniforme()">❌ Sin uniforme</button>
   </main>
   <footer>
     Desarrollado por j.quezada@coemco.cl
@@ -50,6 +54,7 @@
     let registros = [];
     let lector;
     let ocrIntentado = false;
+    let idActual = "";
 
     function normalizar(texto) {
       return texto.replace(/[.-]/g, "").trim();
@@ -81,6 +86,7 @@
     }
 
     function mostrarDatos(id) {
+      idActual = id;
       const persona = buscarID(id);
       if (persona) {
         document.getElementById("resultado").innerHTML = `
@@ -89,10 +95,26 @@
           <p><strong>Curso:</strong> ${persona["Curso"]}</p>
           <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
         `;
+        document.getElementById("registrarUniforme").style.display = "inline-block";
       } else {
         document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
       }
       document.getElementById("reintentar").style.display = "inline-block";
+    }
+
+    function registrarSinUniforme() {
+      fetch("https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZIQxXVeTp8ZhGcZRl8eUwGP2dbIMbMuuWamnrD/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
+      });
+
+      document.getElementById("registrarUniforme").innerText = "✅ Registrado";
+      setTimeout(() => {
+        document.getElementById("registrarUniforme").innerText = "❌ Sin uniforme";
+        document.getElementById("registrarUniforme").style.display = "none";
+      }, 2000);
     }
 
     function usarOCR() {
@@ -148,6 +170,7 @@
       document.getElementById("resultado").innerText = "Escaneando...";
       document.getElementById("id-leido").innerHTML = "ID leído: <em>(en espera)</em>";
       document.getElementById("reintentar").style.display = "none";
+      document.getElementById("registrarUniforme").style.display = "none";
       ocrIntentado = false;
       iniciarEscaneo();
     }
