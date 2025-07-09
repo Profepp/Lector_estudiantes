@@ -90,11 +90,12 @@
       const persona = buscarID(id);
       if (persona) {
         document.getElementById("resultado").innerHTML = `
-          <h3>Información del Estudiante</h3>
-          <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
-          <p><strong>Curso:</strong> ${persona["Curso"]}</p>
-          <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
-        `;
+  <h3>Información del Estudiante</h3>
+  <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
+  <p><strong>Curso:</strong> ${persona["Curso"]}</p>
+  <p><strong>Actividad:</strong> ${persona["Actividad"] || "No registrada"}</p>
+  <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
+`;
         document.getElementById("registrarUniforme").style.display = "inline-block";
       } else {
         document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
