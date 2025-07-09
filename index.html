@@ -6,7 +6,6 @@
   <title>Lector Colegio Fraternidad</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; text-align: center; margin: 0; padding: 0; }
     header { background-color: #005bab; color: white; padding: 10px; }
@@ -53,7 +52,6 @@
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSLi1jizQ6LKkpAXQFEQJWLEnyLHS8mnVFZ5la2kTyfkLwK0x5nXa95MeBrzNZb7B8ZIik7ueNa-4mG/pub?gid=0&single=true&output=csv";
     let registros = [];
     let lector;
-    let ocrIntentado = false;
     let idActual = "";
 
     function normalizar(texto) {
@@ -90,12 +88,12 @@
       const persona = buscarID(id);
       if (persona) {
         document.getElementById("resultado").innerHTML = `
-  <h3>Información del Estudiante</h3>
-  <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
-  <p><strong>Curso:</strong> ${persona["Curso"]}</p>
-  <p><strong>Actividad:</strong> ${persona["Actividad"] || "No registrada"}</p>
-  <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
-`;
+          <h3>Información del Estudiante</h3>
+          <p><strong>Nombre:</strong> ${persona["Apellidos y Nombres"]}</p>
+          <p><strong>Curso:</strong> ${persona["Curso"]}</p>
+          <p><strong>Actividad:</strong> ${persona["Actividad"] || "No registrada"}</p>
+          <p><strong>Observación:</strong> ${persona["Observación"] || "Sin observaciones"}</p>
+        `;
         document.getElementById("registrarUniforme").style.display = "inline-block";
       } else {
         document.getElementById("resultado").innerHTML = "<span style='color:red;'>❌ ID no encontrado.</span>";
@@ -103,69 +101,44 @@
       document.getElementById("reintentar").style.display = "inline-block";
     }
 
-   function registrarSinUniforme() {
-  fetch("https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZlQxXVeTP8zhGcZRI8eUwGP2dbIMbMuuWamnrD/exec", {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
-  });
-
-  // Mostrar mensaje visual en la página
-  const resultadoDiv = document.getElementById("resultado");
-  resultadoDiv.innerHTML += `<p style="color: green; font-weight: bold; margin-top: 10px;">✅ Registrado correctamente</p>`;
-
-  document.getElementById("registrarUniforme").innerText = "✅ Registrado";
-
-  setTimeout(() => {
-    document.getElementById("registrarUniforme").innerText = "❌ Sin uniforme";
-    document.getElementById("registrarUniforme").style.display = "none";
-  }, 2000);
-}
-
-    function usarOCR() {
-      const video = document.querySelector("video");
-      if (!video) return;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      Tesseract.recognize(canvas.toDataURL(), 'eng', {
-        tessedit_char_whitelist: '0123456789'
-      }).then(({ data: { text } }) => {
-        const posibleID = text.match(/\d{7,9}/);
-        if (posibleID) {
-          const idLeido = posibleID[0];
-          document.getElementById("id-leido").innerHTML = "ID leído (OCR): <strong>" + idLeido + "</strong>";
-          mostrarDatos(idLeido);
-        } else {
-          document.getElementById("id-leido").innerHTML = "ID leído: <em>No se reconoció texto útil</em>";
-          document.getElementById("resultado").innerText = "⚠️ Intenta alinear mejor la tarjeta.";
-        }
+    function registrarSinUniforme() {
+      fetch("https://script.google.com/macros/s/AKfycbzF3_4wTeZyDa9Z3wKM73pYjZJ5O8ZlQxXVeTP8zhGcZRI8eUwGP2dbIMbMuuWamnrD/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: idActual, accion: "sin_uniforme" })
       });
+
+      const resultadoDiv = document.getElementById("resultado");
+      resultadoDiv.innerHTML += `<p style="color: green; font-weight: bold; margin-top: 10px;">✅ Registrado correctamente</p>`;
+
+      document.getElementById("registrarUniforme").innerText = "✅ Registrado";
+
+      setTimeout(() => {
+        document.getElementById("registrarUniforme").innerText = "❌ Sin uniforme";
+        document.getElementById("registrarUniforme").style.display = "none";
+      }, 2000);
     }
 
     function iniciarEscaneo() {
       lector = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 400, height: 100 } };
+      const config = {
+        fps: 25,
+        qrbox: { width: 400, height: 200 },
+        formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ]
+      };
 
       lector.start(
         { facingMode: "environment" },
         config,
-        (decodedText, decodedResult) => {
+        (decodedText) => {
           lector.stop().then(() => {
             document.getElementById("id-leido").innerHTML = "ID leído: <strong>" + decodedText + "</strong>";
             mostrarDatos(decodedText.trim());
           });
         },
         (errorMessage) => {
-          if (!ocrIntentado && errorMessage.includes("No MultiFormat Readers")) {
-            ocrIntentado = true;
-            usarOCR();
-          }
+          console.log("Escaneo fallido:", errorMessage);
         }
       ).catch(err => {
         document.getElementById("resultado").innerText = "⚠️ No se pudo acceder a la cámara.";
@@ -177,7 +150,6 @@
       document.getElementById("id-leido").innerHTML = "ID leído: <em>(en espera)</em>";
       document.getElementById("reintentar").style.display = "none";
       document.getElementById("registrarUniforme").style.display = "none";
-      ocrIntentado = false;
       iniciarEscaneo();
     }
 
